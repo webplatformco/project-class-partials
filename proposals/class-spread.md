@@ -23,6 +23,8 @@ But we don't have it for classes.
 This makes it hard to abstract class behavior out into separate modules,
 even in scenarios where class definitions can be cooperatively developed.
 
+It also makes it hard to generate class API surface dynamically, without going back to dealing with prototypes.
+
 ## Proposal
 
 The spread syntax for classes could work like this:
@@ -82,7 +84,7 @@ The following is TBD:
 - Internal properties (e.g. `[[ Call ]]`). Likely handled on a case-by-case basis.
 
 Class spread syntax is not a way to address all class partial use cases, it’s a low-level feature to make tightly coupled use cases easier to manage.
-As a low-level feature, it does allow for some nonsensical patterns:
+Authors should not be spreading objects whose structure they don't control, as it can lead to error conditions.
 
 ```js
 class A {
@@ -105,6 +107,44 @@ This means that accessors remain accessors, they are not copied like regular pro
 
 Ideally, `super` should resolve based on the new class hierarchy.
 But given that `super` is lexically bound, that might be tricky.
+
+That said, even given simple assignment semantics, it can still be useful for cases where the spread class shares some of the same inheritance chain:
+
+```js
+class A {
+	foo() { return "A"; }
+}
+class Trait extends A {
+	foo() { return super.foo() + " Trait"; }
+}
+class B extends A {
+	foo() { return "B"; }
+}
+class C extends B {
+	...Trait;
+}
+
+console.log(new C().foo()); // "A Trait"
+```
+
+In some ways, this is more predictable.
+
+When the Trait needs to reference the host class's superclass dynamically, rather than its own superclass, that can still be done with a little more work:
+
+```js
+class Trait extends A {
+	foo() {
+		let thisSuper = Object.getPrototypeOf(this.constructor)?.prototype;
+		return thisSuper.foo.call(this) + " Trait";
+	}
+}
+
+class C extends B {
+	...Trait;
+}
+
+console.log(new C().foo()); // "B Trait"
+```
 
 ### Naming collisions
 
@@ -178,3 +218,5 @@ class MyClass {
 console.log(MyClass.foo); // 2
 console.log(new MyClass().foo()); // 1
 ```
+
+This also has the very desirable trait (no pun intended 😅) that traits can be applied with a single line of code even when defined procedurally (which is useful for modules).

@@ -609,4 +609,13 @@ Does that generalize?
 
 ## Concrete ideas (strawmans)
 
-Proposals are developed as separate files in the [proposals](proposals) directory.
+It seems that needs are fairly diverse.
+Some authors need in-place mutation, others are fine with wrapping.
+For some use cases `super` dynamically resolving to the superclass is very important, for others it is not.
+For some use cases function composition and adding side effects is very important, for others it doesn't matter.
+And so on.
+
+Perhaps, instead of shipping a declarative syntax for some opinionated flavor of class partials upfront, we could instead start with shipping **low-level primitives** that allow authors to more easily and robustly implement the behaviors they want, making complex things possible, and leaving it up to userland abstractions to make them easy.
+Once enough patterns have emerged, we can later design a language-level syntax that makes simple things easy without the need for userland dependencies.
+
+Ideas around what primitives those might be are developed as separate files in the [proposals](proposals) directory.
