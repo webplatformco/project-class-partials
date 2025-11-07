@@ -52,6 +52,7 @@ For example, a frozen array would fulfill that requirement, as it can later evol
 Depending on the design decisions above, the following are potential known symbol names:
 
 - `Symbol.fields`
+- `Symbol.classFields`
 - `Symbol.instanceFields`
 - `Symbol.publicFields`
 
