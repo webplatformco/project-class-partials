@@ -1,5 +1,7 @@
 # Class Spread Syntax
 
+[TC39 proposal](../proposals/class-spread/)
+
 ## Motivation
 
 Today, the spread syntax can be used to compose an object from multiple other objects of the same or similar type.

@@ -13,13 +13,26 @@ Stage: 0
 Currently, the only mechanisms in the language for reusing class API surface are
 1. Good ol' single inheritance
 2. [Subclass factories](https://github.com/tc39/proposal-mixins) to emulate multiple inheritance by piggybacking on single inheritance
-3. Good ol' low-level prototype _frobnication_.
+3. Good ol' low-level prototype _frobnication_. 😅
 
-However, the inheritance chain is observable from the outside and thus, inheritance-based methods can feel heavyweight, especially for minor code reuse tasks not intrinsically related to the class identity.
+However, the inheritance chain is observable from the outside and thus, inheritance-based methods can feel heavyweight and/or backwards incompatible, especially for minor code reuse tasks not intrinsically related to the class identity.
 
 Low-level prototype fudging can be done transparently, but has awkward ergonomics (needs to be a separate step), and does not have access to all class features (e.g. class fields).
-Additionally, it must be done imperatively, after the class definition.
-This means that it cannot be interleaved with other methods — if the host class author wants to override a method, that _also_ needs to be done imperatively.
+Additionally, having to be done imperatively, after the class definition, means that it cannot be interleaved with other methods — if the host class author wants to override a method, that _also_ needs to be done imperatively.
+
+Static initialization blocks help a little with ergonomics, but are executed after any methods have been defined, so any methods they add cannot be overridden by the host class author:
+
+```js
+class A {
+	foo() { return 1 }
+	static {
+		this.prototype.foo = function() { return 2 }
+	}
+	foo() { return 3 }
+}
+
+console.log(new A().foo()); // 2
+```
 
 In other areas of the language, the **spread syntax** can be used to compose an object from multiple other objects of the same or similar type.
 We have it for iterables:
@@ -56,9 +69,64 @@ something that userland code cannot do today. -->
 
 ## Use cases
 
+### Class modularization
+
+For large classes, it is impractical to maintain the entire class API in a single file.
+However, the ergonomics of modularization are not great, and require a lot of glue code:
+
+
+`methods/foo.js`:
+```js
+export function foo(...args) {
+	let arg = this ?? args.shift();
+	/* elided */
+}
+```
+`methods/bar.js`:
+```js
+export function bar() {
+	let arg = this ?? args.shift();
+	/* elided */
+}
+```
+
+`class.js`:
+```js
+import {foo} from "./methods/foo.js";
+import {bar} from "./methods/bar.js";
+
+export default class Class {
+	foo(...args) {
+		return foo.call(this, ...args);
+	}
+	bar(...args) {
+		return bar.call(this, ...args);
+	}
+	// ...
+}
+```
+
+With regular JS, one can avoid maintaining the API in two places, by using `...args` as shown above.
+However with typed variants of the language (e.g. TypeScript), there is no way to avoid duplicating the function signatures.
+
+With a spread syntax, it could look like this:
+
+`class.js`:
+```js
+import * as methods from "./methods/index.js";
+
+export default class Class {
+	...methods;
+}
+```
+
 ### Certain mixin use cases
 
-TBD
+Given that class spread essentially has macro semantics, it’s suitable for mixin use cases where the mixin identities applied to a given class do not need to be preserved or introspected, but the separation mainly exists for maintainability purposes.
+
+In some ways it’s analogous to the difference between object spread (which does not preserve where each property came from) vs `Object.create()` (which does).
+
+> TODO: Add more concrete use cases.
 
 ### Supporting both a procedural and OOP API
 

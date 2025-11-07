@@ -1,4 +1,6 @@
-# Customizable `[[ Fields ]]`
+# Class fields introspection
+
+[TC39 proposal](../proposals/fields-introspection/)
 
 ## Motivation
 
