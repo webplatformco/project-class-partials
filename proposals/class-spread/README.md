@@ -357,7 +357,7 @@ for (const key in staticDescriptors) {
 }
 ```
 
-There is no way to copy [[Fields]] in userland, but assuming they were [introspectable](../fields-introspection), it could look like:
+There is no way to copy [[Fields]] in userland, but assuming they were [introspectable](../class-fields-introspection), it could look like:
 
 ```js
 B[Symbol.publicFields].push(...A[Symbol.publicFields]);

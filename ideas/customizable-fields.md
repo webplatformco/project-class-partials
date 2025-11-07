@@ -1,6 +1,6 @@
 # Class fields introspection
 
-[TC39 proposal](../proposals/fields-introspection/)
+[TC39 proposal](../proposals/class-fields-introspection/)
 
 ## Motivation
 
