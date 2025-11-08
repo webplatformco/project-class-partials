@@ -1,0 +1,6 @@
+[submodule "proposals/class-spread"]
+	path = proposals/class-spread
+	url = https://github.com/LeaVerou/proposal-class-spread.git
+[submodule "proposals/class-field-introspection"]
+	path = proposals/class-field-introspection
+	url = https://github.com/LeaVerou/proposal-class-field-introspection.git
