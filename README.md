@@ -9,12 +9,11 @@ Authors: Lea Verou
 <summary>Contents</summary>
 
 1. [Use cases](#use-cases)
-	1. [Use case axes/dimensions](#use-case-axesdimensions)
-	2. [Concrete examples](#concrete-examples)
-	3. [API surface for iterables](#api-surface-for-iterables)
-	4. [`HTMLMediaElement`](#htmlmediaelement)
-	5. [Custom Elements](#custom-elements)
-	6. [Custom Attributes](#custom-attributes)
+	1. [Concrete examples](#concrete-examples)
+	2. [API surface for iterables](#api-surface-for-iterables)
+	3. [`HTMLMediaElement`](#htmlmediaelement)
+	4. [Custom Elements](#custom-elements)
+	5. [Custom Attributes](#custom-attributes)
 2. [Prior art](#prior-art)
 	1. [Userland patterns](#userland-patterns)
 	2. [Other languages](#other-languages)
@@ -61,8 +60,6 @@ This document is currently an exploration of the problem and design space, and d
 > To avoid assumptions about specific patterns, this document avoids using terms like _mixins_, _traits_, _protocols_, _interfaces_, etc. and instead uses the relatively unused term _partials_ which is meant to encompass all of them.
 
 ## Use cases
-
-### Use case axes/dimensions
 
 The limitations of single inheritance are well-established in the literature, and there is little point in revisiting them here.
 
@@ -240,12 +237,14 @@ Follows the language’s current design pattern for implementing certain mixins 
 
 Pros:
 - Paves the cowpaths of an existing language pattern
-- Allows for post-hoc extension
+- Allows for in-place extension after class definition
+- Deals with naming collisions by using Symbols by default
 
 Cons:
-- No way to extend existing methods, treats all naming collisions as errors.
+- No way to extend existing methods
+- Actually exposing protocol methods as part of the public (string-based) API in the host class requires a lot of glue code
 - Restricted to prototype fields and methods (?)
-- Author intent needs to be duplicated: once to specify the required symbol and once to call `Protocol.implement()` to apply it.
+- Author intent needs to be duplicated: once to specify the required symbol and once to call `Protocol.implement()` to apply it, creating an unnecessary error condition when only one of the two is done.
 
 ### [Decorators proposal](https://github.com/tc39/proposal-decorators)
 
