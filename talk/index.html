@@ -8,7 +8,7 @@
 	<script src="talk.js" type="module"></script>
 	<link rel="stylesheet" href="talk.css">
 </head>
-<body data-markdown-elements=".md, .md-children > :not(.no-md)" class="language-javascript">
+<body data-markdown-elements=".md, details.notes, .md-children > :not(.no-md)" class="language-javascript">
 
 <header class="slide" id="cover">
 	<h1>
@@ -36,7 +36,7 @@
 	- Coupling: Tightly vs. loosely coupled
 	- Type: Identity vs. trait/behavior
 
-	<details class="notes md">
+	<details class="notes">
 		The use cases for multiple inheritance are well-established in the literature.
 		On a high level, there are two distinct high-level needs:
 		- Modularity for class definitions. Procedural APIs can be broken down into multiple modules, but the story is not quite as smooth for class surface.
@@ -274,25 +274,18 @@
 			<li>Mixin: `RegularPolygon` with a `getArea()` method that implements the formula:
 			<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
 				<mrow>
-					<mi>A</mi>
-					<mo>=</mo>
+					<mi>A</mi><mo>=</mo>
 					<mfrac>
 						<mrow>
 							<mi>n</mi>
 							<msup>
-								<mi>s</mi>
-								<mn>2</mn>
+								<mi>s</mi><mn>2</mn>
 							</msup>
 						</mrow>
 						<mrow>
-							<mn>4</mn>
-							<mo>&InvisibleTimes;</mo>
-							<mi>tan</mi>
+							<mn>4</mn><mo>&InvisibleTimes;</mo><mi>tan</mi>
 							<mfenced>
-								<mfrac>
-									<mi>&pi;</mi>
-									<mi>n</mi>
-								</mfrac>
+								<mfrac><mi>&pi;</mi><mi>n</mi></mfrac>
 							</mfenced>
 						</mrow>
 					</mfrac>
@@ -354,14 +347,14 @@
 				}
 
 				class EquilateralTriangle extends Triangle {
-					#RegularPolygon = new RegularPolygon();
+					#regularPolygon = new RegularPolygon(this.sideLength, 3);
 					constructor() {
 						this.sideLength = sideLength;
 					}
 
 					// Glue code
 					getArea () {
-						return this.#RegularPolygon.getArea();
+						return this.#regularPolygon.getArea();
 					}
 				}
 			</code></pre>
@@ -602,7 +595,7 @@
 	- Consumers > producers
 	- Host class author > Mixin author > Platform implementers
 
-	<details class="notes md">
+	<details class="notes">
 		- Web platform's [priority of constituencies](https://www.w3.org/TR/design-principles/#priority-of-constituencies)
 		- [Consumers > producers](https://lea.verou.me/blog/2025/user-effort/#consumers-over-producers)
 	</details>
@@ -670,7 +663,6 @@
 	<article class="slide columns-2">
 		<h3>Core idea</h3>
 
-
 		<div>
 			<pre class="yes"><code>const arr = [...arr1, ...arr2];</code></pre>
 
@@ -679,81 +671,288 @@
 			<pre class="yes"><code>const obj = { ...obj1, ...obj2 };</code></pre>
 
 			<pre class="no"><code>
-				class A extends B {
-					...M1
-				}
+				class A extends B { ...Mixin }
 			</code></pre>
 		</div>
 
 		<ul>
 			<li>Like object spread, but copies descriptors</li>
-			<li class="pro">Low-level semantics, no-one expects sophisticated MRO</li>
+			<li>Low-level semantics, no sophisticated MRO</li>
 		</ul>
 	</article>
 
 	<article class="slide">
 		<header>
 			<h3>Core idea</h3>
-			<p class="subtitle">Spread class → class</p>
+			<p class="subtitle">Spreading constructor → class definition</p>
 		</header>
 
-		<pre class="language-javascript"><code>
-			class RegularPolygon {
-				getArea () {
-					const {sideLength, sides} = this;
-					return sides * sideLength ** 2 /
-						   (4 * Math.tan(Math.PI / sides));
+		<div class="sbs">
+			<pre class="language-javascript"><code>
+				class RegularPolygon {
+					constructor (sideLength, sides) {
+						this.sideLength = sideLength;
+						this.sides = sides;
+					}
+
+					getArea () {
+						const {sideLength, sides} = this;
+						return sides * sideLength ** 2 /
+							   (4 * Math.tan(Math.PI / sides));
+					}
 				}
-			}
+			</code></pre>
+			<pre class="language-javascript"><code>
+				class EquilateralTriangle extends Triangle {
+					sides = 3;
 
-			class EquilateralTriangle extends Triangle {
-				sides = 3;
+					constructor (sideLength) {
+						super(sideLength, sideLength, sideLength);
+						this.sideLength = sideLength;
+					}
 
-				constructor (sideLength) {
-					super(sideLength, sideLength, sideLength);
-					this.sideLength = sideLength;
+					...RegularPolygon;
 				}
 
-				...RegularPolygon
-			}
-
-			(new EquilateralTriangle(4)).getArea(); // 6.93
-		</code></pre>
+				(new EquilateralTriangle(4)).getArea(); // 6.93
+			</code></pre>
+		</div>
 	</article>
 
-	<article class="slide md">
-		### Core idea
+	<article class="slide">
+		<header>
+			<h3>Core idea</h3>
+			<p class="subtitle">Spreading object → class definition</p>
+		</header>
 
 		<div class="sbs">
-			```js
-			// m1.js
-			export default class M1 {
-				// ...
-			}
-			```
-			```js
-			// methods.js
-			export function foo() {
-				doSomething(this);
-			}
-			```
-			```js
-			// a.js
-			import M1 from "./m1.js";
-			import * as methods from "./methods.js";
+			<pre><div class="filename">regular-polygon.js</div><code>
+				export function getArea (params = this) {
+					const {sideLength, sides} = params;
+					return sides * sideLength ** 2 /
+							(4 * Math.tan(Math.PI / sides));
+				}
+			</code></pre>
 
-			class A {
-				...M1
-				...{prototype: methods}
-			}
+			<pre class="language-javascript"><code>
+				import * as RegularPolygon from "./regular-polygon.js";
+
+				class EquilateralTriangle extends Triangle {
+					sides = 3;
+
+					constructor (sideLength) {
+						super(sideLength, sideLength, sideLength);
+						this.sideLength = sideLength;
+					}
+
+					...{prototype: RegularPolygon};
+				}
+
+				(new EquilateralTriangle(4)).getArea(); // 6.93
+			</code></pre>
 		</div>
 	</article>
 
 	<article class="slide md">
-		### Goals
+		### Use cases
 
-		- Make tightly coupled use cases easier
-		- No conflict handling
+		- Class modularity
+		- Code sharing across procedural and OOP APIs
+		- Dynamically generating class API surface
+		- Rudimentary mixins
+	</article>
+
+	<article class="slide">
+		<h3><div class="block badge">Use cases</div> Class modularity</h3>
+
+		<div class="sbs center">
+			<pre class="language-javascript"><code>
+				import tokenize from "./methods/tokenize.js";
+				import highlight from "./methods/highlight.js";
+				// ...
+
+				class Prism {
+					// constructor elided
+					tokenize (text, grammar) {
+						return tokenize.call(this, text, grammar);
+					}
+					highlight (text, language, options = {}) {
+						return highlight.call(this, text, language, options);
+					}
+					// ...
+				}
+			</code></pre>
+			<div class="arrow-right"></div>
+			<pre class="language-javascript"><code>
+				import * as methods from "./methods.js";
+
+				class Prism {
+					...methods;
+				}
+			</code></pre>
+		</div>
+		<details class="notes">
+			Large classes benefit from modularization for the same reason as procedural APIs.
+			This is a similified but real example from [Prism's v2 codebase](https://github.com/PrismJS/prism/blob/v2/src/core/classes/prism.js).
+			Every method requires boilerplate to forward it to the method in the module.
+			Function signatures have to be duplicated for typing.
+		</details>
+	</article>
+
+	<article class="slide" data-type="Use cases">
+		<h3><div class="block badge">Use cases</div> Procedural & OOP Polymorphism</h3>
+
+		<div class="sbs start">
+			<div>
+				<pre><div class="filename">mix.js</div><code>
+					export default function mix (color, color2) {
+						// elided
+					}
+				</code></pre>
+				<pre><div class="filename">toString.js</div><code>
+					export default function toString (color) {
+						// elided
+					}
+				</code></pre>
+				<pre><div class="filename">color.js</div><code>
+					import mix from "./mix.js";
+					import toString from "./toString.js";
+
+					class Color {
+						mix (color) {
+							return mix(this, color);
+						}
+						toString () {
+							return toString(this);
+						}
+					}
+				</code>
+			</div>
+			<div class="arrow-right"></div>
+			<div>
+				<pre><div class="filename">mix.js</div><code>
+					export default function mix (color, color2) {
+						if (this) [color, color2] = [this, color];
+						// elided
+					}
+				</code></pre>
+				<pre><div class="filename">toString.js</div><code>
+					export default function toString (color) {
+						let color = this ?? color;
+						// elided
+					}
+				</code></pre>
+				<pre><div class="filename">color.js</div><code>
+					import mix from "./mix.js";
+					import toString from "./toString.js";
+
+					class Color {
+						...{prototype: {mix, toString}};
+					}
+				</code>
+			</div>
+
+		</div>
+	</article>
+
+	<article class="slide">
+		<h3><div class="block badge">Use cases</div> Dynamic class API surface</h3>
+
+		<div class="sbs start">
+			<pre><code>
+				lass EquilateralTriangle extends Triangle {
+					#regularPolygon = new RegularPolygon(this.sideLength, 3);
+
+					constructor() {
+						this.sideLength = sideLength;
+					}
+
+					getArea () {
+						return this.#regularPolygon.getArea();
+					}
+
+					// ...
+				}
+			</code></pre>
+			<div class="arrow-right"></div>
+			<pre><code>
+				class EquilateralTriangle extends Triangle {
+					#regularPolygon = new RegularPolygon(this.sideLength, 3);
+
+					constructor() {
+						this.sideLength = sideLength;
+					}
+
+					[...getMembers(RegularPolygon.prototype).map(key =>
+						[key, function (...args) {
+							return this.#regularPolygon[key](...args);
+						}]
+					)]
+				}
+			</code></pre>
+		</div>
+		<p><span class="badge">Why?</span> Delegation pattern, <code>ElementInternals</code>, First class protocols glue code</p>
+		<details class="notes">
+			- Facilitate delegation pattern without restating members
+			- Useful for protocols too
+			- `ElementInternals`
+			- Yes, this is not easily type-safe but that's inherent in all highly dynamic patterns in the language
+		</details>
+	</article>
+
+	<article class="slide">
+		<h3><div class="block badge">Use cases</div> Rudimentary mixins</h3>
+
+		<p><span class="badge">Important</span>Not</span> meant as the end-all of class composition</p>
+
+		<ul>
+			<li class="no">No privates</li>
+			<li class="no">No dynamic <code>super</code></li>
+			<li class="no">No introspection</li>
+			<li class="no">No post-hoc application</li>
+			<li class="con">Poor conflict resolution ergonomics</li>
+		</ul>
+		<p class="delayed">👉🏼 Best suited to tightly coupled use cases</p>
+	</article>
+
+	<article class="slide">
+		<h3>
+			<div class="block badge">Design space</div>
+			Treat objects differently?
+		</h3>
+
+		<div class="sbs center">
+			<div>
+				<p class="md">Different behavior if  `obj.prototype` is falsy</p>
+
+				<pre><code>
+					import * as methods from "./methods.js";
+
+					class Color {
+						...methods;
+					}
+				</code></pre>
+			</div>
+			<strong>vs.</strong>
+			<div>
+				<p class="md">Always spread  `obj.prototype` → `.prototype`</p>
+
+				<pre><code>
+					import * as methods from "./methods.js";
+
+					class Color {
+						...{prototype: methods};
+					}
+				</code></pre>
+			</div>
+		</div>
+	</article>
+
+	<article class="slide">
+		<h3>
+			<div class="block badge">Design space</div>
+			Make fields always override?lv
+		</h3>
 	</article>
 </section>
 
