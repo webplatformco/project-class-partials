@@ -2,48 +2,72 @@
 @import url("https://webplatform.design/talks/common/css/utils.css") layer(utils);
 @import url("https://talks.verou.me/api-design/css/components/arrows.css") layer(utils.arrows);
 
-.type {
-	position: absolute;
-	top: 0;
-	inset-inline-end: calc(2 * var(--slide-padding));
-	padding: .1em .5em .15em;
-	background: radial-gradient(circle at 10% 20% in oklch, var(--color-red), var(--color-purple));
-	color: canvasText;
-	color-scheme: dark;
-	font-weight: 700;
-	text-transform: uppercase;
-	font-stretch: condensed;
-	font-size: 2rem;
+@layer theme {
+	:where(a) {
+		color: color-mix(in oklab, var(--color-blue), currentColor 20%);
+		text-underline-offset: clamp(0em, .15em, .4rem);
+		text-decoration-thickness: .05em;
+
+		&:where(:not(:hover, :focus)) {
+			color: color-mix(in oklab, var(--color-blue), currentColor 40%);
+			text-decoration: underline .05em;
+			text-decoration-color: oklab(from currentColor l a b / 0.3);
+		}
+	}
+
+	#cover {
+		h1 {
+			font-size: calc(4 * var(--slide-base-font-size, 1rem));
+		}
+	}
+
+	.slide > :nth-child(1 of header, h1, h2, h3) {
+		margin-block-end: 2rem;
+	}
 }
 
-.badge.block {
-	font-size: clamp(0rem, 70%, 3rem);
-}
+@layer utils {
+	.type {
+		position: absolute;
+		top: 0;
+		inset-inline-end: calc(2 * var(--slide-padding));
+		padding: .1em .5em .15em;
+		background: radial-gradient(circle at 10% 20% in oklch, var(--color-red), var(--color-purple));
+		color: canvasText;
+		color-scheme: dark;
+		font-weight: 700;
+		text-transform: uppercase;
+		font-stretch: condensed;
+		font-size: 2rem;
+	}
 
-.badge:not(.block) {
-	display: inline-block;
-	vertical-align: .1em;
-	margin-inline: .3em;
-	border-radius: .2em;
-	font-size: 60%;
-}
+	.badge.block {
+		font-size: clamp(0rem, 70%, 3rem);
+	}
 
-pre .filename {
-	font-size: 70%;
-	font-weight: 700;
-	position: absolute;
-	top: 0;
-	right: 0;
-	padding: .2em .8em;
-	background: oklch(from var(--background-color) calc(l - .08) calc(c + clamp(0, .03, c)) h);
-	color: var(--color);
-	border-start-end-radius: inherit;
-	border-end-start-radius: inherit;
-	mix-blend-mode: multiply;
-}
+	.badge:not(.block) {
+		display: inline-block;
+		vertical-align: .1em;
+		margin-inline: .3em;
+		border-radius: .2em;
+		font-size: 60%;
+	}
 
-#cover {
-	h1 {
+	pre .filename {
+		font-size: 70%;
+		font-weight: 700;
+		position: absolute;
+		top: 0;
+		right: 0;
+		padding: .2em .8em;
+		background: oklch(from var(--background-color) calc(l - .08) calc(c + clamp(0, .03, c)) h);
+		color: var(--color);
+		border-start-end-radius: inherit;
+		border-end-start-radius: inherit;
+		mix-blend-mode: multiply;
+	}
+
+	.emoji {
 		font-size: calc(4 * var(--slide-base-font-size, 1rem));
 	}
 }
@@ -51,9 +75,4 @@ pre .filename {
 .slide > h3 ~ section > h4 {
 	font-size: calc(2 * var(--slide-base-font-size, 1rem));
 	margin-block-start: 0;
-}
-
-
-.emoji {
-	font-size: calc(4 * var(--slide-base-font-size, 1rem));
 }

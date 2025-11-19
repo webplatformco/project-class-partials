@@ -792,10 +792,11 @@
 			</code></pre>
 		</div>
 		<details class="notes">
-			Large classes benefit from modularization for the same reason as procedural APIs.
-			This is a similified but real example from [Prism's v2 codebase](https://github.com/PrismJS/prism/blob/v2/src/core/classes/prism.js).
+			- Large classes benefit from modularization for the same reason as procedural APIs.
 			Every method requires boilerplate to forward it to the method in the module.
 			Function signatures have to be duplicated for typing.
+			- This is a similified but real example from [Prism's v2 codebase](https://github.com/PrismJS/prism/blob/v2/src/core/classes/prism.js).
+			- [This Babel class](https://github.com/babel/babel/blob/main/packages/babel-traverse/src/path/index.ts) is even more egregious
 		</details>
 	</article>
 
@@ -856,7 +857,12 @@
 	</article>
 
 	<article class="slide">
-		<h3><div class="block badge">Use cases</div> Dynamic class API surface</h3>
+		<header>
+			<h3><div class="block badge">Use cases</div> Dynamic class API surface</h3>
+			<p class="subtitle">For maintainability and future-proofing</p>
+		</header>
+
+
 
 		<div class="sbs start">
 			<pre><code>
@@ -891,7 +897,9 @@
 				}
 			</code></pre>
 		</div>
-		<p><span class="badge">Why?</span> Delegation pattern, <code>ElementInternals</code>, First class protocols glue code</p>
+
+		<p><span class="badge">Examples</span> Delegation pattern, <code>ElementInternals</code>, First Class Protocols glue code, etc.</p>
+
 		<details class="notes">
 			- Facilitate delegation pattern without restating members
 			- Useful for protocols too
@@ -901,18 +909,53 @@
 	</article>
 
 	<article class="slide">
+		<header>
+			<h3><div class="block badge">Use cases</div> Dynamic class API surface</h3>
+			<p class="subtitle">To DRY-fy repetitive code</p>
+		</header>
+
+		<p>Real example from <a href="https://github.com/babel/babel/blob/main/packages/babel-traverse/src/path/index.ts#L398-L413">Babel</a>:</p>
+
+		<pre class="language-typescript"><code>
+			for (const type of t.TYPES) {
+				const typeKey = `is${type}`;
+				const fn = t[typeKey];
+
+				NodePath_Final.prototype[typeKey] = function (opts: any) {
+					return fn.call(this.node, opts);
+				};
+
+				NodePath_Final.prototype[`assert${type}`] = function (opts: any) {
+					if (!fn(this.node, opts)) {
+						throw new TypeError(`Expected node path of type ${type}`);
+					}
+				};
+			}
+		</code></pre>
+	</article>
+
+	<article class="slide">
 		<h3><div class="block badge">Use cases</div> Rudimentary mixins</h3>
 
-		<p><span class="badge">Important</span>Not</span> meant as the end-all of class composition</p>
 
-		<ul>
-			<li class="no">No privates</li>
-			<li class="no">No dynamic <code>super</code></li>
-			<li class="no">No introspection</li>
-			<li class="no">No post-hoc application</li>
-			<li class="con">Poor conflict resolution ergonomics</li>
-		</ul>
-		<p class="delayed">👉🏼 Best suited to tightly coupled use cases</p>
+
+		<div class="sbs">
+			<ul>
+				<li class="pro">Simple things are easy</li>
+				<li class="pro">No inheritance chain pollution</li>
+				<li class="pro"><code>super</code> works*</li>
+			</ul>
+			<ul>
+				<li class="no">No privates</li>
+				<li class="no">No dynamic <code>super</code></li>
+				<li class="no">No introspection</li>
+				<li class="no">No post-hoc application</li>
+				<li class="con">Poor conflict resolution ergonomics</li>
+			</ul>
+		</div>
+		<p class="delayed"><span class="badge">Important</span>
+			Well suited to tightly coupled use cases,
+			but not the end-all of class composition</p>
 	</article>
 
 	<article class="slide">
@@ -951,8 +994,40 @@
 	<article class="slide">
 		<h3>
 			<div class="block badge">Design space</div>
-			Make fields always override?lv
+			Make fields always override?
 		</h3>
+
+		<div class="sbs start">
+			<pre><code>
+				class M {
+					foo = 1;
+				}
+			</code></pre>
+			<pre class="delayed"><code>
+				class A {
+					foo = 2;
+
+					...M
+				}
+
+				(new A()).foo; // 1
+			</code></pre>
+			<pre class="delayed"><code>
+				class A {
+					...M;
+
+					foo = 2;
+				}
+
+				(new A()).foo; // 2
+			</code></pre>
+		</div>
+		<details class="notes">
+			A potential footgun is that due to the order-sensitivity, for class fields to override mixin fields they have to be defined after the mixin.
+			This breaks the usual practice of defining fields first.
+			Are there use cases where this is actually desirable?
+			If not, would it make sense to hoist host class fields to always be defined after spreading?
+		</details>
 	</article>
 </section>
 
@@ -965,15 +1040,75 @@
 		### Core idea
 
 		- Public fields are part of the class's API surface
-		- Static fields can be introspected, but not instance fields
+		- (Public) static fields can be introspected, but not instance fields
 		- _"Just create an instance"_ → But side effects!
+	</article>
+
+	<article class="slide">
+		<header>
+			<h3>Public fields are class API</h3>
+			<p class="subtitle">Accessor vs field is often an implementation detail</p>
+		</header>
+
+		<div class="sbs">
+			<pre class="yes"><code>
+				class A {
+					#foo = 1;
+					get foo() { return this.#foo; }
+					set foo(value) { this.#foo = value; }
+				}
+			</code></pre>
+			<pre class="no"><code>
+				class A {
+					foo = 1;
+				}
+			</code></pre>
+		</div>
+		<details class="notes">
+			There is no reason why the first pattern would be introspectable from the outside and the second would not be.
+
+			Sure, the underlying mechanics are different, fields are hung on the instance whereas methods and accessors are hung on the prototype,
+			but to JS authors that is largely an implementation detail.
+			When they need to run logic on property access or assignment, they use accessors.
+			When they don't, they use fields because that's the language abstraction that is available and hanging value properties on the prototype is usually nonsensical.
+			Other languages don't even expose such a distinction.
+
+
+		</details>
+	</article>
+
+	<article class="slide">
+		<header>
+			<h3>Public fields are class API</h3>
+			<p class="subtitle">Methods as fields</p>
+		</header>
+
+
+
+		<div class="sbs">
+			<pre class="yes"><code>
+				class A {
+					foo () { return 1; }
+				}
+			</code></pre>
+			<pre class="no"><code>
+				class A {
+					foo = function() { return 1; }
+				}
+			</code></pre>
+		</div>
+		<details class="notes">
+			There are even cases where _methods_ are defined as class fields, for all sorts of reasons, e.g. to dynamically define them based on some condition.
+
+			Effectively, public class fields have become _a new type of prototype_ holding part of the class shape.
+			This just provides access to it.
+		</details>
 	</article>
 
 	<article class="slide md">
 		## Hairiest issues 🪮
 
 		- What about private fields?
-		- What about `super`?
 	</article>
 </section>
 
