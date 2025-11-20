@@ -226,37 +226,27 @@ Notes:
 Apparently one of the most elegant solutions for multiple inheritance.
 
 ```eiffel
-class
-	M1
+class M1
 
-feature
-	f
-		do
-			print ("M1 f%N")
-		end
+  feature f do
+		print ("M1 f%N")
+  end
 end
 
 
-class
-	M2
-
-feature
-	f
-		do
-			print ("M2 f%N")
-		end
+class M2
+  feature f do
+		print ("M2 f%N")
+  end
 end
 
 
-class
-	A
-
-inherit
-	M1
-		rename
-			f as f_from_a
-		end
-	M2
+class A
+  inherit M1
+      rename
+        f as f_from_a
+      end
+    M2
 end
 ```
 

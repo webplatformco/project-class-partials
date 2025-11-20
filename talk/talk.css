@@ -44,13 +44,14 @@
 		font-size: 70%;
 		font-weight: 700;
 		position: absolute;
-		top: 0;
-		right: 0;
-		padding: .2em .8em;
+		bottom: 100%;
+		left: 1em;
+		padding: .1em .8em 0;
 		background: oklch(from var(--background-color) calc(l - .08) calc(c + clamp(0, .03, c)) h);
 		color: var(--color);
-		border-start-end-radius: inherit;
-		border-end-start-radius: inherit;
+		border-radius: .4rem;
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
 		mix-blend-mode: multiply;
 	}
 

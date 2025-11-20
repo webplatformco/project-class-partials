@@ -28,15 +28,28 @@
 </article>
 
 <article class="slide md">
+	## Overview
+
+	1. Use cases
+	2. Composition across languages
+	3. Userland patterns
+	4. Existing Stage 1+ proposals
+	5. Design space & considerations
+	6. Class spread syntax proposal
+	7. Class public fields introspection proposal
+
+</article>
+
+<article class="slide md">
 	<header>
 		## Use cases
 		<p class="subtitle">Class composition beyond inheritance</p>
 	</header>
 
-	- Modularity of class definitions
+	- Modularity of class definitions (logic AND API surface)
 	- Polymorphism (procedural & OOP flavors of the same functions)
 	- Better data modeling for traits/behaviors (_has a_ vs _is a_)
-	- Support true multiple inheritance cases better
+	- True multiple inheritance (e.g. `EquilateralTriangle` extends `Triangle` and `RegularPolygon`)
 	- Transparent composition
 
 	<details class="notes">
@@ -49,13 +62,13 @@
 	</details>
 </article>
 
-<!-- <article class="slide md">
-	## Variables
+<article class="slide md">
+	## Example from the web platform: `EventTarget`
 
-	- What: State vs logic composition (+ 💠 Diamond problem)
-	- 🕒 When: Class definition time vs. post-hoc vs. instance creation time
-	- ✅ Contract: Requirements from host class
-</article> -->
+	- Capability, not identity
+	- Direct subclasses: `Node`, `Window`, `IDBRequest`, `AudioNode`, `AudioContext`
+	- `ArrayStream extends Array` → cannot make it an event target
+</article>
 
 <section>
 	<header class="slide">
@@ -278,118 +291,6 @@
 	</article>
 </section>
 
-
-<article class="slide columns-2 dont-resize">
-	<h2>Diamond problem?</h2>
-
-	<img src="images/diamond.svg" alt="Shape">
-
-	<div class="md">
-		```js
-		let t = new EquilateralTriangle(4);
-		t.getArea(); // which one?
-		```
-
-		- Limited in JS, as **no stateful subinstances** like C++
-		- Most discourse about the _deadly diamond of death_ is actually around **conflict resolution / MRO**
-		- Diamond issues can still come up around **method call duplication**
-	</div>
-	<details class="notes">
-		- Conflict resolution is orthogonal to diamond inheritance.
-		- Diamond issues when you have something like `super`.
-	</details>
-</article>
-
-<article class="slide">
-	<header>
-		<h2>Diamond problem in JS</h2>
-		<p class="subtitle">With naïve multiple inheritance</p>
-	</header>
-
-	<div class="sbs start">
-		<pre><code>
-			class A {
-				constructor (n) {
-					this.n = n;
-					sideEffect();
-				}
-			}
-
-
-		</code></pre>
-		<pre><code>
-			class B extends A {
-				constructor () {
-					super(1);
-				}
-			}
-			class C extends A {
-				constructor () {
-					super(2);
-				}
-			}
-		</code></pre>
-		<pre><code>
-			class D extends B, C {
-				constructor () {
-					super();
-				}
-			}
-
-			(new D()).n; // ???
-			// sideEffect() 1x or 2x?
-		</code></pre>
-	</div>
-
-	<details class="notes">
-		- Conflict resolution is orthogonal to diamond inheritance.
-		- Diamond issues when you have something like `super`.
-	</details>
-</article>
-
-<article class="slide">
-	<h2>Single inheritance MRO</h2>
-
-	<div class="sbs">
-		<section>
-			<h3>Default: Subclass overrides superclass</h3>
-			<pre class="language-javascript"><code>
-				class A {
-					foo () { console.log("A") }
-				}
-				class B extends A {
-					foo () { console.log("B") }
-				}
-
-				new B(); // "B"
-			</code></pre>
-		</section>
-		<section>
-			<h3 class="md">Subclass can use `super` to override</h3>
-			<pre class="language-javascript"><code>
-				class A {
-					foo () { console.log("A") }
-				}
-				class B extends A {
-					foo () {
-						super.foo();
-						console.log("B")
-					}
-				}
-			</code></pre>
-		</section>
-	</div>
-</article>
-
-<article class="slide md">
-	<h2>Multiple inheritance MRO</h2>
-
-	- Single inheritance chain distinct from traits/interfaces/mixins
-	- Linearization algorithms (usually C3)
-	- Error on conflicts, forcing disambiguation
-	- Renaming at host class
-</article>
-
 <section>
 	<header class="slide">
 		<h2>Userland patterns</h2>
@@ -498,6 +399,31 @@
 				<li class="no">Glue code tedious and not future proof</li>
 			</ul>
 		</div>
+	</article>
+
+	<article class="slide">
+		<pre><code>
+			class MyElement extends HTMLElement {
+				// This tells ElementInternals that this element is form associated
+				static formAssociated = true;
+
+				constructor() {
+					super();
+					this._internals = this.attachInternals();
+					// then use this._internals.setFormValue(value)
+				}
+
+				// API glue code
+				get labels () { return this._internals.labels; }
+				get form () { return this._internals.form; }
+				get validity () { return this._internals.validity; }
+				get validationMessage () { return this._internals.validationMessage; }
+				willValidate (...args) { return this._internals.willValidate(...args); }
+				reportValidity(...args) { return this._internals.reportValidity(...args); }
+				checkValidity(...args) { return this._internals.checkValidity(...args); }
+				// ...
+			}
+		</code></pre>
 	</article>
 
 	<article class="slide">
@@ -721,49 +647,215 @@
 
 </section>
 
-<article class="slide md">
-	## Priority of constituencies
-
-	- Consumers > producers
-	- Host class author > Mixin author > Platform implementers
-
-	<details class="notes">
-		- Web platform's [priority of constituencies](https://www.w3.org/TR/design-principles/#priority-of-constituencies)
-		- [Consumers > producers](https://lea.verou.me/blog/2025/user-effort/#consumers-over-producers)
-	</details>
-</article>
-
-<article class="slide md">
-	## Requirements
-
-	- Extend API surface of host class
-	- Memory efficient (prototypes > instances)
-	- Static introspection (`A` uses `M1`?)
-	- Encapsulation
-</article>
-
-<article class="slide md">
-	## Nice to haves
-
-	- Single declaration of intent
-	- Instance introspection (`instanceof`)
-</article>
-
-<article class="slide md">
-	## Hairiest issues 🪮
-
-	- Is post-hoc composition desirable?
-	- Should private members be shared?
-	- Naming conflicts: explicit vs. implicit
-	- Function composition: explicit vs. implicit
-</article>
-
 <section>
 	<header class="slide">
-		<h1>Design space</h1>
+		<h2>Design space & considerations</h2>
 	</header>
 
+	<article class="slide md">
+		## Requirements
 
+		- API surface, not just logic
+		- No inheritance chain pollution
+		- Memory efficient (prototypes > instances)
+		- Encapsulation
+	</article>
+
+	<article class="slide md">
+		## Nice to haves
+
+		- Single declaration of intent
+		- Introspection (`A` uses `M1`?)
+	</article>
+
+	<article class="slide">
+		<h3>Priority of constituencies</h3>
+
+		<ul>
+			<li><a href="https://www.w3.org/TR/design-principles/#priority-of-constituencies">Original PoC</a>: Authors > Implementers > Spec editors > Purity</li>
+			<li class="delayed"><a href="https://lea.verou.me/blog/2025/user-effort/#consumers-over-producers">Generalization</a>: Consumers > producers</li>
+			<li class="delayed">Host class author > Mixin author > Platform implementers</li>
+		</ul>
+	</article>
+
+	<article class="slide">
+		<h2><span class="badge block">Proposed principle</span> Syntax in class body iff order matters</h2>
+
+		<div>
+			<p>Let’s not be like Ruby here:</p>
+			<pre class="language-ruby"><code>
+				class A
+					def m1
+						puts "M1"
+					end
+
+					# Hoisted
+					include M1
+
+					def m1
+						puts "M1"
+					end
+				end
+			</code></pre>
+		</div>
+	</article>
+
+	<article class="slide columns-2 dont-resize">
+		<h2>Diamond problem?</h2>
+
+		<img src="images/diamond.svg" alt="Shape">
+
+		<div class="md">
+			```js
+			let t = new EquilateralTriangle(4);
+			t.getArea(); // which one?
+			```
+
+			- Limited in JS, as **no stateful subinstances** like C++
+			- Most discourse about the _deadly diamond of death_ is actually around **conflict resolution / MRO**
+			- Diamond issues can still come up around **method call duplication**
+		</div>
+		<details class="notes">
+			- Conflict resolution is orthogonal to diamond inheritance.
+			- Diamond issues when you have something like `super`.
+		</details>
+	</article>
+
+	<!-- <article class="slide">
+		<header>
+			<h2>Diamond problem in JS</h2>
+			<p class="subtitle">With naïve multiple inheritance</p>
+		</header>
+
+		<div class="sbs start">
+			<pre><code>
+				class A {
+					constructor (n) {
+						this.n = n;
+						sideEffect();
+					}
+				}
+
+
+			</code></pre>
+			<pre><code>
+				class B extends A {
+					constructor () {
+						super(1);
+					}
+				}
+				class C extends A {
+					constructor () {
+						super(2);
+					}
+				}
+			</code></pre>
+			<pre><code>
+				class D extends B, C {
+					constructor () {
+						super();
+					}
+				}
+
+				(new D()).n; // ???
+				// sideEffect() 1x or 2x?
+			</code></pre>
+		</div>
+
+		<details class="notes">
+			- Conflict resolution is orthogonal to diamond inheritance.
+			- Diamond issues when you have something like `super`.
+		</details>
+	</article> -->
+
+	<article class="slide">
+		<h2>Single inheritance resolution</h2>
+
+		<div class="sbs">
+			<section>
+				<h3>Default: Subclass overrides superclass</h3>
+				<pre class="language-javascript"><code>
+					class A {
+						foo () { console.log("A") }
+					}
+					class B extends A {
+						foo () { console.log("B") }
+					}
+
+					new B(); // "B"
+				</code></pre>
+			</section>
+			<section>
+				<h3 class="md">Subclass can use `super` to override</h3>
+				<pre class="language-javascript"><code>
+					class A {
+						foo () { console.log("A") }
+					}
+					class B extends A {
+						foo () {
+							super.foo();
+							console.log("B")
+						}
+					}
+				</code></pre>
+			</section>
+		</div>
+	</article>
+
+	<article class="slide md">
+		<h2>Multiple inheritance resolution</h2>
+
+		<div class="md">
+			Multiple strategies, not mutually exclusive:
+			- Distinct single inheritance chain
+			- Linearization (usually [C3](https://justanotherdev7.medium.com/understanding-pythons-c3-linearization-algorithm-c92909dacf1d))
+			- Last one wins typically a factor to some degree
+			- Error on conflicts, forcing disambiguation
+			- Renaming at host class
+			- Composition
+		</div>
+	</article>
+
+	<article class="slide md">
+		<h2>Java 8+</h2>
+
+		- Single inheritance + interfaces
+		- Interfaces = contracts + default implementations
+		- **Precedence:** Inheritance > interfaces
+		- **Error:** if conflict between interfaces w/o disambiguation
+		- **Disambiguation:**
+			- `InterfaceName.super`
+			- `super` is inheritance only
+	</article>
+
+	<article class="slide">
+		<h2>Eiffel</h2>
+		<div class="sbs">
+			<div class="md">
+				- Renaming at the point of inclusion
+				- No generic `super`
+				- `Precursor` must specify which superclass to use (e.g. `Precursor {M1}`)
+			</div>
+			<pre class="language-eiffel"><code>
+				class A
+					inherit M1
+						rename
+							f as f_from_a
+						end
+					M2
+				end
+			</code></pre>
+		</div>
+	</article>
+
+	<article class="dumpster-fire slide md">
+		## Hairiest issues 🪮
+
+		- Is post-hoc composition desirable?
+		- Private members
+		- Naming conflicts: explicit vs. implicit
+		- Function composition: explicit vs. implicit
+	</article>
 </section>
 
 <section>
@@ -774,16 +866,19 @@
 	<article class="slide md">
 		## Different use cases, different primitives?
 
+		- Most controversy is around **loosely coupled use cases**
 		- Tightly coupled use cases don't need sophisticated conflict management
 		- Tightly coupled use cases don't need post-hoc application
-		- Most controversy is around loosely coupled use cases
 	</article>
 
-	<article class="slide md">
-		## Proposed path forwards
+	<article class="slide">
+		<h2>Proposed path forwards</h2>
 
-		- High-level primitives for tightly coupled use cases: Class spread syntax
-		- Low-level primitives for decoupled use cases: Make userland helpers easier
+		<ul>
+			<li>High-level primitives for tightly coupled use cases <span class="delayed">→ Class spread syntax</span></li>
+			<li>Low-level primitives to make userland helpers easier for loosely coupled use cases <span class="delayed">→ Fields introspection</span></li>
+			<li>Low-level primitives can also be used to <strong>explain</strong> the high-level ones</li>
+		</ul>
 	</article>
 </section>
 
@@ -994,8 +1089,6 @@
 			<p class="subtitle">For maintainability and future-proofing</p>
 		</header>
 
-
-
 		<div class="sbs start">
 			<pre><code>
 				lass EquilateralTriangle extends Triangle {
@@ -1068,8 +1161,6 @@
 
 	<article class="slide">
 		<h3><div class="block badge">Use cases</div> Rudimentary mixins</h3>
-
-
 
 		<div class="sbs">
 			<ul>
@@ -1160,6 +1251,10 @@
 			Are there use cases where this is actually desirable?
 			If not, would it make sense to hoist host class fields to always be defined after spreading?
 		</details>
+	</article>
+
+	<article class="slide">
+		<h3>Can I haz Stage 1?</h3>
 	</article>
 </section>
 
@@ -1294,6 +1389,10 @@
 				</ul>
 			</section>
 		</div>
+	</article>
+
+	<article class="slide">
+		<h3>Can I haz Stage 1?</h3>
 	</article>
 </section>
 
